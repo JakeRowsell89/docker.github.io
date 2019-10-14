@@ -1,7 +1,7 @@
 ---
 description: Getting started with Docker Compose and Django
 keywords: documentation, docs,  docker, compose, orchestration, containers
-title: "Quickstart: Compose and Django"
+title: 'Quickstart: Compose and Django'
 ---
 
 This quick-start guide demonstrates how to use Docker Compose to set up and run a simple Django/PostgreSQL app. Before starting,
@@ -14,73 +14,79 @@ and a `docker-compose.yml` file. (You can use either a `.yml` or `.yaml` extensi
 
 1. Create an empty project directory.
 
-    You can name the directory something easy for you to remember. This directory is the context for your application image. The directory should only contain resources to build that image.
+   You can name the directory something easy for you to remember. This directory is the context for your application image. The directory should only contain resources to build that image.
 
 2. Create a new file called `Dockerfile` in your project directory.
 
-    The Dockerfile defines an application's image content via one or more build
-    commands that configure that image. Once built, you can run the image in a
-    container.  For more information on `Dockerfile`, see the [Docker user
-    guide](/engine/tutorials/dockerimages.md#building-an-image-from-a-dockerfile)
-    and the [Dockerfile reference](/engine/reference/builder.md).
+   The Dockerfile defines an application's image content via one or more build
+   commands that configure that image. Once built, you can run the image in a
+   container. For more information on `Dockerfile`, see the [Docker user
+   guide](/engine/tutorials/dockerimages.md#building-an-image-from-a-dockerfile)
+   and the [Dockerfile reference](/engine/reference/builder.md).
 
 3. Add the following content to the `Dockerfile`.
 
-       FROM python:3
-       ENV PYTHONUNBUFFERED 1
-       RUN mkdir /code
-       WORKDIR /code
-       COPY requirements.txt /code/
-       RUN pip install -r requirements.txt
-       COPY . /code/
+   FROM python:3
+   ENV PYTHONUNBUFFERED 1
+   RUN mkdir -p /code
+   WORKDIR /code
+   COPY requirements.txt .
+   RUN pip install -r requirements.txt
+   COPY . .
 
-    This `Dockerfile` starts with a [Python 3 parent image](https://hub.docker.com/r/library/python/tags/3/).
-    The parent image is modified by adding a new `code` directory. The parent image is further modified
-    by installing the Python requirements defined in the `requirements.txt` file.
+   This `Dockerfile` starts with a [Python 3 parent image](https://hub.docker.com/r/library/python/tags/3/).
+   The parent image is modified by adding a new `code` directory, as well as any required intermediate directories.
+   The working directory is set to `/code`. While the `WORKDIR` keyword does create a new directory if required, it does so at root.
+   It is therefore preferable to use `mkdir`, which allows the container to be run as a different user.
+   Next we `COPY` `requirements.txt` into the working directory before `RUN`-ing the `pip install -r requirements.txt` command.
+   The order of copying `requirements.txt` (a list of dependencies to install) before running the install command is commonly used in Docker.
+   It ensures only changes made to `requirements.txt` (or a previous line) would bust the build cache. Without changes the result of the install command can be served from the build cache, greatly speeding up the build time.
+   Lastly we `COPY` our remaining files from our current directory to our working directory.
+   The `COPY` of remaining files is deliberately left until the end, as it means changes to _any_ file would invalidate the cache from that command onwards.
 
 4. Save and close the `Dockerfile`.
 
 5. Create a `requirements.txt` in your project directory.
 
-    This file is used by the `RUN pip install -r requirements.txt` command in your `Dockerfile`.
+   This file is used by the `RUN pip install -r requirements.txt` command in your `Dockerfile`.
 
 6. Add the required software in the file.
 
-       Django>=2.0,<3.0
-       psycopg2>=2.7,<3.0
+   Django>=2.0,<3.0
+   psycopg2>=2.7,<3.0
 
 7. Save and close the `requirements.txt` file.
 
 8. Create a file called `docker-compose.yml` in your project directory.
 
-    The `docker-compose.yml` file describes the services that make your app. In
-    this example those services are a web server and database.  The compose file
-    also describes which Docker images these services use, how they link
-    together, any volumes they might need mounted inside the containers.
-    Finally, the `docker-compose.yml` file describes which ports these services
-    expose. See the [`docker-compose.yml` reference](compose-file.md) for more
-    information on how this file works.
+   The `docker-compose.yml` file describes the services that make your app. In
+   this example those services are a web server and database. The compose file
+   also describes which Docker images these services use, how they link
+   together, any volumes they might need mounted inside the containers.
+   Finally, the `docker-compose.yml` file describes which ports these services
+   expose. See the [`docker-compose.yml` reference](compose-file.md) for more
+   information on how this file works.
 
-9.  Add the following configuration to the file.
+9. Add the following configuration to the file.
 
-    ```none
-    version: '3'
+   ```none
+   version: '3'
 
-    services:
-      db:
-        image: postgres
-      web:
-        build: .
-        command: python manage.py runserver 0.0.0.0:8000
-        volumes:
-          - .:/code
-        ports:
-          - "8000:8000"
-        depends_on:
-          - db
-    ```
+   services:
+     db:
+       image: postgres
+     web:
+       build: .
+       command: python manage.py runserver 0.0.0.0:8000
+       volumes:
+         - .:/code
+       ports:
+         - "8000:8000"
+       depends_on:
+         - db
+   ```
 
-    This file defines two services: The `db` service and the `web` service.
+   This file defines two services: The `db` service and the `web` service.
 
 10. Save and close the `docker-compose.yml` file.
 
@@ -88,37 +94,37 @@ and a `docker-compose.yml` file. (You can use either a `.yml` or `.yaml` extensi
 
 In this step, you create a Django starter project by building the image from the build context defined in the previous procedure.
 
-1. Change to the root of your project directory.
+1.  Change to the root of your project directory.
 
-2. Create the Django project by running
-the [docker-compose run](/compose/reference/run/) command as follows.
+2.  Create the Django project by running
+    the [docker-compose run](/compose/reference/run/) command as follows.
 
-       sudo docker-compose run web django-admin startproject composeexample .
+           sudo docker-compose run web django-admin startproject composeexample .
 
-    This instructs Compose to run `django-admin startproject composeexample`
-    in a container, using the `web` service's image and configuration. Because
-    the `web` image doesn't exist yet, Compose builds it from the current
-    directory, as specified by the `build: .` line in `docker-compose.yml`.
+        This instructs Compose to run `django-admin startproject composeexample`
+        in a container, using the `web` service's image and configuration. Because
+        the `web` image doesn't exist yet, Compose builds it from the current
+        directory, as specified by the `build: .` line in `docker-compose.yml`.
 
-    Once the `web` service image is built, Compose runs it and executes the
-    `django-admin startproject` command in the container. This command
-    instructs Django to create a set of files and directories representing a
-    Django project.
+        Once the `web` service image is built, Compose runs it and executes the
+        `django-admin startproject` command in the container. This command
+        instructs Django to create a set of files and directories representing a
+        Django project.
 
-3. After the `docker-compose` command completes, list the contents of your project.
+3.  After the `docker-compose` command completes, list the contents of your project.
 
-       $ ls -l
-       drwxr-xr-x 2 root   root   composeexample
-       -rw-rw-r-- 1 user   user   docker-compose.yml
-       -rw-rw-r-- 1 user   user   Dockerfile
-       -rwxr-xr-x 1 root   root   manage.py
-       -rw-rw-r-- 1 user   user   requirements.txt
+    \$ ls -l
+    drwxr-xr-x 2 root root composeexample
+    -rw-rw-r-- 1 user user docker-compose.yml
+    -rw-rw-r-- 1 user user Dockerfile
+    -rwxr-xr-x 1 root root manage.py
+    -rw-rw-r-- 1 user user requirements.txt
 
     If you are running Docker on Linux, the files `django-admin` created are
     owned by root. This happens because the container runs as the root user.
     Change the ownership of the new files.
 
-       sudo chown -R $USER:$USER .
+    sudo chown -R $USER:$USER .
 
     If you are running Docker on Mac or Windows, you should already
     have ownership of all files, including those generated by
@@ -131,7 +137,6 @@ the [docker-compose run](/compose/reference/run/) command as follows.
         -rw-r--r--  1 user  staff  159 Feb 13 23:02 docker-compose.yml
         -rwxr-xr-x  1 user  staff  257 Feb 13 23:07 manage.py
         -rw-r--r--  1 user  staff   16 Feb 13 23:01 requirements.txt
-
 
 ### Connect the database
 
@@ -192,30 +197,31 @@ In this section, you set up the database connection for Django.
     > Note:
     >
     > On certain platforms (Windows 10), you might need to
-      edit `ALLOWED_HOSTS` inside `settings.py` and add your Docker host name
-      or IP address to the list.  For demo purposes, you can set the value to:
+    > edit `ALLOWED_HOSTS` inside `settings.py` and add your Docker host name
+    > or IP address to the list. For demo purposes, you can set the value to:
     >
     >       ALLOWED_HOSTS = ['*']
     >
-    > This value is **not** safe for production usage.  Refer to the
-     [Django documentation](https://docs.djangoproject.com/en/1.11/ref/settings/#allowed-hosts)  for more information.
+    > This value is **not** safe for production usage. Refer to the
+    > [Django documentation](https://docs.djangoproject.com/en/1.11/ref/settings/#allowed-hosts) for more information.
 
 5.  List running containers.
 
-    In another terminal window, list the running Docker processes with the `docker container ls` command.
+        In another terminal window, list the running Docker processes with the `docker container ls` command.
 
-    ```none
-    $ docker ps
-CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
-def85eff5f51        django_web          "python3 manage.py..."   10 minutes ago      Up 9 minutes        0.0.0.0:8000->8000/tcp   django_web_1
-678ce61c79cc        postgres            "docker-entrypoint..."   20 minutes ago      Up 9 minutes        5432/tcp                 django_db_1
+        ```none
+        $ docker ps
 
-    ```
+    CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES
+    def85eff5f51 django_web "python3 manage.py..." 10 minutes ago Up 9 minutes 0.0.0.0:8000->8000/tcp django_web_1
+    678ce61c79cc postgres "docker-entrypoint..." 20 minutes ago Up 9 minutes 5432/tcp django_db_1
+
+        ```
 
 6.  Shut down services and clean up by using either of these methods:
 
-    * Stop the application by typing `Ctrl-C`
-    in the same shell in where you started it:
+    - Stop the application by typing `Ctrl-C`
+      in the same shell in where you started it:
 
       ```none
       Gracefully stopping... (press Ctrl+C again to force)
@@ -223,7 +229,7 @@ def85eff5f51        django_web          "python3 manage.py..."   10 minutes ago 
       Killing test_db_1 ... done
       ```
 
-    * Or, for a more elegant shutdown, switch to a different shell, and run [docker-compose down](/compose/reference/down/) from the top level of your Django sample project directory.
+    - Or, for a more elegant shutdown, switch to a different shell, and run [docker-compose down](/compose/reference/down/) from the top level of your Django sample project directory.
 
       ```none
       vmb at mymachine in ~/sandbox/django
@@ -236,7 +242,7 @@ def85eff5f51        django_web          "python3 manage.py..."   10 minutes ago 
       Removing network django_default
       ```
 
-  Once you've shut down the app, you can safely remove the Django project directory (for example, `rm -rf django`).
+Once you've shut down the app, you can safely remove the Django project directory (for example, `rm -rf django`).
 
 ## More Compose documentation
 
